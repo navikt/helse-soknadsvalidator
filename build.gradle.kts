@@ -9,6 +9,8 @@ val kluentVersion = "1.41"
 val slf4jVersion = "1.7.25"
 val ktorVersion = "0.9.3"
 val prometheusVersion = "0.5.0"
+val kafkaVersion = "2.0.0"
+val confluentVersion = "4.1.2"
 
 val mainClass = "no.nav.helse.AppKt"
 
@@ -39,6 +41,9 @@ dependencies {
     compile("io.ktor:ktor-server-netty:$ktorVersion")
     compile("io.prometheus:simpleclient_common:$prometheusVersion")
     compile("io.prometheus:simpleclient_hotspot:$prometheusVersion")
+    compile("org.apache.kafka:kafka-clients:$kafkaVersion")
+    compile("org.apache.kafka:kafka-streams:$kafkaVersion")
+    compile("io.confluent:kafka-streams-avro-serde:$confluentVersion")
 
 
     testCompile("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
