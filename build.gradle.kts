@@ -10,7 +10,6 @@ val slf4jVersion = "1.7.25"
 val ktorVersion = "0.9.3"
 val prometheusVersion = "0.5.0"
 
-
 val mainClass = "no.nav.helse.AppKt"
 
 plugins {
@@ -60,8 +59,6 @@ repositories {
     }
     jcenter()
     mavenCentral()
-
-
 }
 
 java {
@@ -79,4 +76,3 @@ tasks.withType<Test> {
 tasks.withType<Wrapper> {
     gradleVersion = "4.10.2"
 }
-
