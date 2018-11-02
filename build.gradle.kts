@@ -62,6 +62,8 @@ repositories {
     maven {
         url = URI("https://dl.bintray.com/kotlin/ktor")
     }
+    maven("http://packages.confluent.io/maven/")
+
     jcenter()
     mavenCentral()
 }
