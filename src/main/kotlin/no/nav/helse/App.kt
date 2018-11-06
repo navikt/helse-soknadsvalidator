@@ -1,17 +1,20 @@
 package no.nav.helse
 
-import io.ktor.application.*
-import io.ktor.http.*
-import io.ktor.response.*
-import io.ktor.routing.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.prometheus.client.*
-import io.prometheus.client.exporter.common.*
-import kotlinx.coroutines.experimental.*
+import io.ktor.application.call
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.response.respond
+import io.ktor.response.respondWrite
+import io.ktor.routing.get
+import io.ktor.routing.routing
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.Counter
+import io.prometheus.client.exporter.common.TextFormat
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.JoinWindows
-import org.slf4j.*
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 private val collectorRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
@@ -20,7 +23,7 @@ private val korrektevedtakCounter = Counter.build().name("korrektevedtak").help(
 private val log = LoggerFactory.getLogger("no.nav.helse.App")
 
 
-fun main(args: Array<String>) = runBlocking(block = {
+fun main(args: Array<String>) = run(block = {
     log.info("Starter validator")
 
     val builder = StreamsBuilder()
@@ -29,11 +32,17 @@ fun main(args: Array<String>) = runBlocking(block = {
     val infotrygd = builder.stream<String, InfoTrygdVedtak>("vedtak.infotrygd")
     val sykepenger = builder.stream<String, SykePengeVedtak>("vedtak.sykepenger")
     val soknadOgVedtak = builder.stream<String, Vedtak>("vedtak.kombinert")
+    val resultat = builder.stream<String, String>("vedtak.resultat")
 
 
     sykepenger.join(infotrygd, vedtaksJoiner(), JoinWindows.of(TimeUnit.DAYS.toMillis(5))).to("vedtak.kombinert")
 
-    soknadOgVedtak.foreach { _, vedtak -> if (vedtak.fasit.belop == vedtak.forslag.belop) korrektevedtakCounter.inc() }
+    soknadOgVedtak.filter({ _, vedtak -> vedtak.fasit.belop == vedtak.forslag.belop })
+            .mapValues ({ value -> value.fasit.belop.toString()})
+    .to("vedtak.resultat")
+
+    resultat.foreach { key, value -> korrektevedtakCounter.inc() }
+
 
     startWebserver()
 })

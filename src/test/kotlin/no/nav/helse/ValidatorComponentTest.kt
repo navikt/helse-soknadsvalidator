@@ -62,14 +62,14 @@ class ValidatorComponentTest {
 
     @Test
     fun ` producing a message `() {
-        val producer = KafkaProducer<String, Vedtak>(Properties().apply {
-            put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, configureAvroSerde<Vedtak>(serdeConfig))
+        val producer = KafkaProducer<String, String>(Properties().apply {
+            put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
             put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
             put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, embeddedEnvironment.schemaRegistry!!.url)
             put(ConsumerConfig.GROUP_ID_CONFIG, "dummy-dagpenger-innkomne-jp")
             put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, embeddedEnvironment.brokersURL)
         })
-        producer.send(ProducerRecord<String, Vedtak>("vedtak.infostrygd", Vedtak(InfoTrygdVedtak("string", 123, Date(), Date()), SykePengeVedtak("", 123, Date(), Date()))))
+        producer.send(ProducerRecord<String, String>("vedtak.resultat",  "id","string"))
     }
 
 
