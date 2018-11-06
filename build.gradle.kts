@@ -2,6 +2,8 @@ import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.net.URI
 
+val kotlin_version: String by extra
+
 
 val junitJupiterVersion = "5.3.1"
 val spekVersion = "1.2.1"
@@ -16,11 +18,16 @@ val mainClass = "no.nav.helse.AppKt"
 
 plugins {
     application
-    kotlin("jvm") version "1.2.71"
+    id("org.jetbrains.kotlin.jvm") version "1.3.0"
     id("com.github.johnrengelman.shadow") version "2.0.0"
+}
+apply {
+    plugin("kotlin")
 }
 
 buildscript {
+    var kotlin_version: String by extra
+    kotlin_version = "1.3.0"
     dependencies {
         classpath("org.junit.platform:junit-platform-gradle-plugin:1.2.0")
     }
@@ -49,6 +56,8 @@ dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     testCompile("org.amshove.kluent:kluent:$kluentVersion")
+    testImplementation ("no.nav:kafka-embedded-env:2.0.0")
+
     testCompile("org.jetbrains.spek:spek-api:$spekVersion") {
         exclude(group = "org.jetbrains.kotlin")
     }
@@ -61,6 +70,7 @@ dependencies {
 repositories {
     maven {
         url = URI("https://dl.bintray.com/kotlin/ktor")
+
     }
     maven("http://packages.confluent.io/maven/")
 
@@ -82,4 +92,12 @@ tasks.withType<Test> {
 
 tasks.withType<Wrapper> {
     gradleVersion = "4.10.2"
+}
+val compileKotlin: KotlinCompile by tasks
+compileKotlin.kotlinOptions {
+    jvmTarget = "1.8"
+}
+val compileTestKotlin: KotlinCompile by tasks
+compileTestKotlin.kotlinOptions {
+    jvmTarget = "1.8"
 }
