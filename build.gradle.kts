@@ -12,7 +12,7 @@ val slf4jVersion = "1.7.25"
 val ktorVersion = "0.9.3"
 val prometheusVersion = "0.5.0"
 val kafkaVersion = "2.0.0"
-val confluentVersion = "4.1.2"
+val confluentVersion = "5.0.0"
 val avroVersion = "1.8.2"
 
 
@@ -62,7 +62,7 @@ dependencies {
     testCompile("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     testCompile("org.amshove.kluent:kluent:$kluentVersion")
-    testImplementation ("no.nav:kafka-embedded-env:2.0.0")
+    testImplementation ("no.nav:kafka-embedded-env:2.0.1")
 
     testCompile("org.jetbrains.spek:spek-api:$spekVersion") {
         exclude(group = "org.jetbrains.kotlin")
