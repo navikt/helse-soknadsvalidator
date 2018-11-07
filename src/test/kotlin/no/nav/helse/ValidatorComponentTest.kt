@@ -89,12 +89,12 @@ class ValidatorComponentTest {
             put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
             put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, embeddedEnvironment.schemaRegistry!!.url)
             put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, embeddedEnvironment.brokersURL)
-            put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT")
-            put(SaslConfigs.SASL_MECHANISM, "PLAIN")
-            put(
-                    SaslConfigs.SASL_JAAS_CONFIG,
-                    "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${username}\" password=\"${password}\";"
-            )
+            //put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT")
+            //put(SaslConfigs.SASL_MECHANISM, "PLAIN")
+            //put(
+            //        SaslConfigs.SASL_JAAS_CONFIG,
+            //        "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${username}\" password=\"${password}\";"
+            //)
         })
 
         val sykepengeProducer = KafkaProducer<String, SykePengeVedtak>(Properties().apply {
@@ -102,12 +102,12 @@ class ValidatorComponentTest {
             put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
             put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, embeddedEnvironment.schemaRegistry!!.url)
             put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, embeddedEnvironment.brokersURL)
-            put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT")
-            put(SaslConfigs.SASL_MECHANISM, "PLAIN")
-            put(
-                    SaslConfigs.SASL_JAAS_CONFIG,
-                    "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${username}\" password=\"${password}\";"
-            )
+            //put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT")
+            //put(SaslConfigs.SASL_MECHANISM, "PLAIN")
+            //put(
+            //        SaslConfigs.SASL_JAAS_CONFIG,
+            //        "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${username}\" password=\"${password}\";"
+            //)
         })
 
         val resultConsumer = KafkaConsumer<String, String>(Properties().apply {
