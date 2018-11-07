@@ -13,6 +13,8 @@ val ktorVersion = "0.9.3"
 val prometheusVersion = "0.5.0"
 val kafkaVersion = "2.0.0"
 val confluentVersion = "4.1.2"
+val avroVersion = "1.8.2"
+
 
 val mainClass = "no.nav.helse.AppKt"
 
@@ -20,14 +22,16 @@ plugins {
     application
     id("org.jetbrains.kotlin.jvm") version "1.3.0"
     id("com.github.johnrengelman.shadow") version "2.0.0"
+    id("com.commercehub.gradle.plugin.avro") version "0.14.2"
+
 }
 apply {
     plugin("kotlin")
 }
 
 buildscript {
-    var kotlin_version: String by extra
-    kotlin_version = "1.3.0"
+    //var kotlin_version: String by extra
+    //kotlin_version = "1.3.0"
     dependencies {
         classpath("org.junit.platform:junit-platform-gradle-plugin:1.2.0")
     }
@@ -51,6 +55,8 @@ dependencies {
     compile("org.apache.kafka:kafka-clients:$kafkaVersion")
     compile("org.apache.kafka:kafka-streams:$kafkaVersion")
     compile("io.confluent:kafka-streams-avro-serde:$confluentVersion")
+    api("org.apache.avro:avro:$avroVersion")
+
 
 
     testCompile("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
@@ -68,19 +74,16 @@ dependencies {
 }
 
 repositories {
-    maven {
-        url = URI("https://dl.bintray.com/kotlin/ktor")
-
-    }
+    maven("https://dl.bintray.com/kotlin/ktor")
     maven("http://packages.confluent.io/maven/")
-
+    maven("https://repo.adeo.no/repository/maven-central")
     jcenter()
     mavenCentral()
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_10
-    targetCompatibility = JavaVersion.VERSION_1_10
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 tasks.withType<Test> {
@@ -89,6 +92,7 @@ tasks.withType<Test> {
         events("passed", "skipped", "failed")
     }
 }
+
 
 tasks.withType<Wrapper> {
     gradleVersion = "4.10.2"

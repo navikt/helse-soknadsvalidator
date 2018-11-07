@@ -12,14 +12,19 @@ import io.ktor.server.netty.Netty
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Counter
 import io.prometheus.client.exporter.common.TextFormat
+import no.nav.helse.avro.InfoTrygdVedtak
+import no.nav.helse.avro.SykePengeVedtak
+import no.nav.helse.avro.Vedtak
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.JoinWindows
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 private val collectorRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
+
 private val vedtakCounter = Counter.build().name("vedtak").help("Antall vedtak  vurdert").register()
 private val korrektevedtakCounter = Counter.build().name("korrektevedtak").help("Antall vedtak som var riktig").register()
+
 private val log = LoggerFactory.getLogger("no.nav.helse.App")
 
 
@@ -37,11 +42,11 @@ fun main(args: Array<String>) = run(block = {
 
     sykepenger.join(infotrygd, vedtaksJoiner(), JoinWindows.of(TimeUnit.DAYS.toMillis(5))).to("vedtak.kombinert")
 
-    soknadOgVedtak.filter({ _, vedtak -> vedtak.fasit.belop == vedtak.forslag.belop })
-            .mapValues ({ value -> value.fasit.belop.toString()})
+    soknadOgVedtak.filter({ _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() })
+            .mapValues ({ value -> value.getFasit().getBelop()})
     .to("vedtak.resultat")
 
-    resultat.foreach { key, value -> korrektevedtakCounter.inc() }
+    resultat.foreach { _, _ -> korrektevedtakCounter.inc() }
 
 
     startWebserver()

@@ -1,0 +1,22 @@
+@namespace("no.nav.helse.avro")
+protocol Sykepenger {
+
+  record InfoTrygdVedtak {
+    string id;
+    string belop;
+    string fraOgMed;
+    string tilOgMed;
+  }
+
+  record SykePengeVedtak {
+    string id;
+    string belop;
+    string fraOgMed;
+    string tilOgMed;  }
+
+  record Vedtak {
+    InfoTrygdVedtak fasit;
+    SykePengeVedtak forslag;
+
+  }
+}
