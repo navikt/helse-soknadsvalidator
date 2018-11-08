@@ -77,12 +77,12 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_1_10
+    targetCompatibility = JavaVersion.VERSION_1_10
 }
 
 tasks.withType<Test> {
-//    useJUnitPlatform()
+    useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
     }
