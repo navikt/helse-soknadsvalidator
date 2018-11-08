@@ -31,11 +31,11 @@ class Validator(val env: Environment) {
 
         val vedtakSykepenger = builder.consumeGenericTopic(Topics.VEDTAK_SYKEPENGER)
 
-        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD).join(vedtakSykepenger, vedtaksJoiner(), JoinWindows.of(TimeUnit.DAYS.toMillis(5))).to(Topics.VEDTAK_KOMBINERT)
+        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD).join(vedtakSykepenger, vedtaksJoiner(), JoinWindows.of(TimeUnit.DAYS.toMillis(5))).toTopic(Topics.VEDTAK_KOMBINERT)
 
-        builder.consumeTopic(Topics.VEDTAK_KOMBINERT).filter({ _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() })
-                .mapValues({ value -> value.getFasit().getBelop() })
-                .to(Topics.VEDTAK_RESULTAT)
+        builder.consumeTopic(Topics.VEDTAK_KOMBINERT).filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
+                .mapValues { value -> value.getFasit().getBelop() }
+                .to(Topics.VEDTAK_RESULTAT.name)
 
         builder.consumeGenericTopic(Topics.VEDTAK_RESULTAT).foreach { _, _ -> korrektevedtakCounter.inc() }
 
