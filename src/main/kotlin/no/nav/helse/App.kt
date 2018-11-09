@@ -1,5 +1,7 @@
 package no.nav.helse
 
+import no.nav.helse.streams.Environment
+
 fun main() {
-   Validator().start()
+   Validator(Environment()).start()
   }

@@ -19,7 +19,7 @@ class Validator(val env: Environment) {
     private val log = LoggerFactory.getLogger("vedtakvalidator")
 
     fun start() {
-        StreamConsumer(appId, Environment(), valider()).start()
+        StreamConsumer(appId, env, valider()).start()
     }
 
     private val korrektevedtakCounter = Counter.build().name("korrektevedtak").help("antall korrekte vedtak").register()
@@ -31,7 +31,7 @@ class Validator(val env: Environment) {
 
         val vedtakSykepenger = builder.consumeGenericTopic(Topics.VEDTAK_SYKEPENGER)
 
-        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD).join(vedtakSykepenger, vedtaksJoiner(), JoinWindows.of(TimeUnit.DAYS.toMillis(5))).toTopic(Topics.VEDTAK_KOMBINERT)
+        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD).join(vedtakSykepenger, vedtaksJoiner(), JoinWindows.of(TimeUnit.MINUTES.toMillis(5))).toTopic(Topics.VEDTAK_KOMBINERT)
 
         builder.consumeTopic(Topics.VEDTAK_KOMBINERT).filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
                 .mapValues { value -> value.getFasit().getBelop() }

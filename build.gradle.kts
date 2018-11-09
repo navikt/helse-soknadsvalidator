@@ -1,12 +1,11 @@
 
 val kotlin_version: String by extra
 
-
 val junitJupiterVersion = "5.3.1"
 val spekVersion = "1.2.1"
 val kluentVersion = "1.41"
 val slf4jVersion = "1.7.25"
-val ktorVersion = "0.9.3"
+val ktorVersion = "1.0.0-beta-3"
 val prometheusVersion = "0.5.0"
 val kafkaVersion = "2.0.0"
 val confluentVersion = "5.0.0"
@@ -19,15 +18,13 @@ val mainClass = "no.nav.helse.AppKt"
 
 plugins {
     application
+    id("com.commercehub.gradle.plugin.avro") version "0.9.1"
     id("org.jetbrains.kotlin.jvm") version "1.3.0"
     id("com.github.johnrengelman.shadow") version "2.0.0"
-    id("com.commercehub.gradle.plugin.avro") version "0.9.1"
 
 }
 
 buildscript {
-    //var kotlin_version: String by extra
-    //kotlin_version = "1.3.0"
     dependencies {
         classpath("org.junit.platform:junit-platform-gradle-plugin:1.2.0")
     }
@@ -42,6 +39,8 @@ dependencies {
     compile("com.ibm.mq:com.ibm.mq.allclient:9.1.0.0")
     compile("org.slf4j:slf4j-simple:$slf4jVersion")
     compile("io.ktor:ktor-server-netty:$ktorVersion")
+    compile("org.apache.avro:avro:$avroVersion")
+
     implementation("io.prometheus:simpleclient_common:$prometheusVersion")
     implementation("io.prometheus:simpleclient_hotspot:$prometheusVersion")
 
@@ -50,13 +49,13 @@ dependencies {
     compile("io.confluent:kafka-streams-avro-serde:$confluentVersion")
 
     api("org.json:json:$orgJsonVersion")
-    api("org.apache.avro:avro:$avroVersion")
 
 
 
     testCompile("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     testCompile("org.amshove.kluent:kluent:$kluentVersion")
+
     testImplementation ("no.nav:kafka-embedded-env:2.0.1")
 
     testCompile("org.jetbrains.spek:spek-api:$spekVersion") {

@@ -6,6 +6,8 @@ import no.nav.common.JAASCredential
 import no.nav.common.KafkaEnvironment
 import no.nav.helse.avro.InfoTrygdVedtak
 import no.nav.helse.avro.SykePengeVedtak
+import no.nav.helse.streams.Environment
+import no.nav.helse.streams.configureAvroSerde
 import org.apache.avro.specific.SpecificRecord
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -83,6 +85,14 @@ class ValidatorComponentTest {
     @Test
     fun ` two vedtak with equal amounts are counted`() {
 
+        // given an environment
+        val env = Environment(
+                username = username,
+                password = password,
+                bootstrapServersUrl = embeddedEnvironment.brokersURL,
+                schemaRegistryUrl = embeddedEnvironment.schemaRegistry!!.url
+        )
+
         val infotrygProducer = KafkaProducer<String, InfoTrygdVedtak>(Properties().apply {
 
             put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, configureAvroSerde<InfoTrygdVedtak>(serdeConfig).serializer().javaClass.name)
@@ -124,6 +134,8 @@ class ValidatorComponentTest {
             //)
         })
 
+        val validator = Validator(env)
+        validator.start()
 
         infotrygProducer.send(ProducerRecord<String, InfoTrygdVedtak>("vedtak.infotrygd", InfoTrygdVedtak("1", "123", "1.1.2018", "1.12.2018")))
         sykepengeProducer.send(ProducerRecord<String, SykePengeVedtak>("vedtak.infotrygd", SykePengeVedtak("1", "123", "1.1.2018", "1.12.2018")))
@@ -134,8 +146,5 @@ class ValidatorComponentTest {
     }
 
 
-    fun <T : SpecificRecord?> configureAvroSerde(serdeConfig: Map<String, Any>): SpecificAvroSerde<T> {
-        return SpecificAvroSerde<T>().apply { configure(serdeConfig, false) }
-    }
 
 }
