@@ -142,6 +142,7 @@ class ValidatorComponentTest {
 
         val consumerRecords = resultConsumer.poll(Duration.ofSeconds(10))
         assertEquals(1, consumerRecords.count())
+        validator.stop()
     }
 
 

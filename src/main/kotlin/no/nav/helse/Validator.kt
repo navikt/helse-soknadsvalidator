@@ -18,11 +18,16 @@ import java.util.concurrent.TimeUnit
 class Validator(val env: Environment) {
 
     private val appId = "sykepengevedtak-validator"
-    //private val env: Environment = Environment()
     private val log = LoggerFactory.getLogger("vedtakvalidator")
 
+    private val streamConsumer = StreamConsumer(appId, env, valider())
+
     fun start() {
-        StreamConsumer(appId, env, valider()).start()
+        streamConsumer.start()
+    }
+
+    fun stop(){
+        streamConsumer.stop()
     }
 
     private val korrektevedtakCounter = Counter.build().name("korrektevedtak").help("antall korrekte vedtak").register()
@@ -31,8 +36,6 @@ class Validator(val env: Environment) {
     private fun valider(): KafkaStreams {
 
         val builder = StreamsBuilder()
-
-        //val vedtakSykepenger =
 
         val sykePengeVedtakSerde = configureAvroSerde<SykePengeVedtak>(
                 mapOf(
@@ -58,12 +61,18 @@ class Validator(val env: Environment) {
                 valueSerde = sykePengeVedtakSerde)).peek { _, value -> log.info("recieved.SP: " + value) }
 
 
+        val fiveMinWindow = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
+        val joinSerdes = Joined.with(Serdes.String(), infotrygdVedtakSerde, sykePengeVedtakSerde)
+
         builder.consumeTopic(Topics.VEDTAK_INFOTRYGD.copy(
-                valueSerde = infotrygdVedtakSerde)).peek { _, value -> log.info("recieved.IT: " + value) }.join(sykePengeStream, vedtaksJoiner(), JoinWindows.of(TimeUnit.MINUTES.toMillis(5)), Joined.with(Serdes.String(), infotrygdVedtakSerde, sykePengeVedtakSerde)).toTopic(Topics.VEDTAK_KOMBINERT.copy(
+                valueSerde = infotrygdVedtakSerde)).peek { _, value -> log.info("recieved.IT: " + value) }
+                .join(sykePengeStream, vedtaksJoiner(), fiveMinWindow, joinSerdes)
+                .toTopic(Topics.VEDTAK_KOMBINERT.copy(
                 valueSerde = kombinertVedtakSerde))
 
         builder.consumeTopic(Topics.VEDTAK_KOMBINERT.copy(
-                valueSerde = kombinertVedtakSerde)).peek { _, value -> log.info("recieved.KOMBINERT: " + value) }.filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
+                valueSerde = kombinertVedtakSerde)).peek { _, value -> log.info("recieved.KOMBINERT: " + value) }
+                .filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
                 .mapValues { value -> value.getFasit().getBelop() }
                 .peek { _, _ -> korrektevedtakCounter.inc() }
                 .toTopic(Topics.VEDTAK_RESULTAT)

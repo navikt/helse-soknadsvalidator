@@ -59,4 +59,8 @@ class StreamConsumer(val consumerName: String,
          streams.close()
       })
    }
+
+   fun stop() {
+      streams.close()
+   }
 }
