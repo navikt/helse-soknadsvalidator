@@ -65,6 +65,8 @@ dependencies {
         exclude(group = "org.junit.platform")
         exclude(group = "org.jetbrains.kotlin")
     }
+
+    testImplementation("no.nav:kafka-embedded-env:2.0.1")
 }
 
 repositories {
