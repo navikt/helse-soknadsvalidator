@@ -1,5 +1,7 @@
 package no.nav.helse
 
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
+import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
 import io.prometheus.client.Counter
 import no.nav.helse.avro.InfoTrygdVedtak
 import no.nav.helse.avro.SykePengeVedtak
@@ -29,11 +31,31 @@ class Validator(val env: Environment) {
 
         val builder = StreamsBuilder()
 
-        val vedtakSykepenger = builder.consumeGenericTopic(Topics.VEDTAK_SYKEPENGER)
+        //val vedtakSykepenger =
 
-        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD).join(vedtakSykepenger, vedtaksJoiner(), JoinWindows.of(TimeUnit.MINUTES.toMillis(5))).toTopic(Topics.VEDTAK_KOMBINERT)
+        val sykePengeStream = builder.consumeTopic(Topics.VEDTAK_SYKEPENGER.copy(
+                valueSerde = configureAvroSerde(
+                        mapOf(
+                                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl,
+                                KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS to true,
+                                KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true
+                        )
+                ))).peek { _, value -> log.info("recieved.SP: " + value) }
+        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD.copy(
+                valueSerde = configureAvroSerde(
+                        mapOf(
+                                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl,
+                                KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS to true,
+                                KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true
+                        )                ))).peek { _, value -> log.info("recieved.IT: " + value) }.join(sykePengeStream, vedtaksJoiner(), JoinWindows.of(TimeUnit.MINUTES.toMillis(5))).toTopic(Topics.VEDTAK_KOMBINERT)
 
-        builder.consumeTopic(Topics.VEDTAK_KOMBINERT).filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
+        builder.consumeTopic(Topics.VEDTAK_KOMBINERT.copy(
+                valueSerde = configureAvroSerde(
+                        mapOf(
+                                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl,
+                                KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS to true,
+                                KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true
+                        )                ))).peek { _, value -> log.info("recieved.KOMBINERT: " + value) }.filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
                 .mapValues { value -> value.getFasit().getBelop() }
                 .to(Topics.VEDTAK_RESULTAT.name)
 
@@ -44,8 +66,9 @@ class Validator(val env: Environment) {
 
     private fun vedtaksJoiner(): (InfoTrygdVedtak, SykePengeVedtak) -> Vedtak {
         return { fasit, forslag ->
+            log.info("joingin messages: " + fasit + forslag)
             vedtakCounter.inc()
-            Vedtak(fasit, forslag)
+            Vedtak.newBuilder().setFasit(fasit).setForslag(forslag).build()
         }
     }
 }

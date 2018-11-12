@@ -8,9 +8,11 @@ import no.nav.helse.avro.SykePengeVedtak
 import no.nav.helse.avro.Vedtak
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.specific.SpecificRecord
-import org.apache.kafka.common.serialization.*
-import org.apache.kafka.streams.*
-import org.apache.kafka.streams.kstream.*
+import org.apache.kafka.common.serialization.Serdes
+import org.apache.kafka.streams.StreamsBuilder
+import org.apache.kafka.streams.kstream.Consumed
+import org.apache.kafka.streams.kstream.KStream
+import org.apache.kafka.streams.kstream.Produced
 
 private val serdeConfig = mapOf(
         AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG to

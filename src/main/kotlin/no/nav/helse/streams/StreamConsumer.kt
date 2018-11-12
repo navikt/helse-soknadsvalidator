@@ -59,5 +59,4 @@ class StreamConsumer(val consumerName: String,
          streams.close()
       })
    }
-
 }
