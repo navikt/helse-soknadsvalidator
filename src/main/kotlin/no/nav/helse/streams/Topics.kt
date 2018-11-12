@@ -40,7 +40,7 @@ object Topics {
    val VEDTAK_RESULTAT = Topic(
            name = "vedtak.resultat",
            keySerde = Serdes.String(),
-           valueSerde = configureGenericAvroSerde(serdeConfig)
+           valueSerde = Serdes.String()
    )
 }
 fun configureGenericAvroSerde(serdeConfig: Map<String, Any>): GenericAvroSerde {

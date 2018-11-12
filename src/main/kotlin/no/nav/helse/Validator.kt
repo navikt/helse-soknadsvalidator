@@ -65,9 +65,9 @@ class Validator(val env: Environment) {
         builder.consumeTopic(Topics.VEDTAK_KOMBINERT.copy(
                 valueSerde = kombinertVedtakSerde)).peek { _, value -> log.info("recieved.KOMBINERT: " + value) }.filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
                 .mapValues { value -> value.getFasit().getBelop() }
-                .to(Topics.VEDTAK_RESULTAT.name)
+                .peek { _, _ -> korrektevedtakCounter.inc() }
+                .toTopic(Topics.VEDTAK_RESULTAT)
 
-        builder.consumeGenericTopic(Topics.VEDTAK_RESULTAT).foreach { _, _ -> korrektevedtakCounter.inc() }
 
         return KafkaStreams(builder.build(), streamConfig(appId, env))
     }
