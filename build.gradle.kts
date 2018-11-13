@@ -19,7 +19,7 @@ val mainClass = "no.nav.helse.AppKt"
 plugins {
     application
     id("com.commercehub.gradle.plugin.avro") version "0.9.1"
-    id("org.jetbrains.kotlin.jvm") version "1.3.0"
+    kotlin("jvm") version "1.3.0"
     id("com.github.johnrengelman.shadow") version "2.0.0"
 
 }

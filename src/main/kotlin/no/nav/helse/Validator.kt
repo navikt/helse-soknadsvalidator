@@ -1,6 +1,8 @@
 package no.nav.helse
 
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
+import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde
 import io.prometheus.client.Counter
 import no.nav.helse.avro.InfoTrygdVedtak
 import no.nav.helse.avro.SykePengeVedtak
@@ -26,7 +28,7 @@ class Validator(val env: Environment) {
         streamConsumer.start()
     }
 
-    fun stop(){
+    fun stop() {
         streamConsumer.stop()
     }
 
@@ -37,41 +39,21 @@ class Validator(val env: Environment) {
 
         val builder = StreamsBuilder()
 
-        val sykePengeVedtakSerde = configureAvroSerde<SykePengeVedtak>(
-                mapOf(
-                        KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl,
-                        KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS to true,
-                        KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true
-                )
-        )
-        val infotrygdVedtakSerde = configureAvroSerde<InfoTrygdVedtak>(
-                mapOf(
-                        KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl,
-                        KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS to true,
-                        KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true
-                ))
-
-        val kombinertVedtakSerde = configureAvroSerde<Vedtak>(mapOf(
-                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl,
-                KafkaAvroDeserializerConfig.AUTO_REGISTER_SCHEMAS to true,
-                KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true
-        ))
-
         val sykePengeStream = builder.consumeTopic(Topics.VEDTAK_SYKEPENGER.copy(
-                valueSerde = sykePengeVedtakSerde)).peek { _, value -> log.info("recieved.SP: " + value) }
+                valueSerde = sykepengeSerde()))
+                .peek { _, value -> log.info("received.SP: " + value) }
 
-
-        val fiveMinWindow = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
-        val joinSerdes = Joined.with(Serdes.String(), infotrygdVedtakSerde, sykePengeVedtakSerde)
 
         builder.consumeTopic(Topics.VEDTAK_INFOTRYGD.copy(
-                valueSerde = infotrygdVedtakSerde)).peek { _, value -> log.info("recieved.IT: " + value) }
-                .join(sykePengeStream, vedtaksJoiner(), fiveMinWindow, joinSerdes)
+                valueSerde = infotrygdSerde()))
+                .peek { _, value -> log.info("received.IT: " + value) }
+                .join(sykePengeStream, vedtaksJoiner(), joinWindows(), joined())
                 .toTopic(Topics.VEDTAK_KOMBINERT.copy(
-                valueSerde = kombinertVedtakSerde))
+                        valueSerde = kombinertSerde()))
 
         builder.consumeTopic(Topics.VEDTAK_KOMBINERT.copy(
-                valueSerde = kombinertVedtakSerde)).peek { _, value -> log.info("recieved.KOMBINERT: " + value) }
+                valueSerde = kombinertSerde()))
+                .peek { _, value -> log.info("received.KOMBINERT: " + value) }
                 .filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
                 .mapValues { value -> value.getFasit().getBelop() }
                 .peek { _, _ -> korrektevedtakCounter.inc() }
@@ -80,6 +62,38 @@ class Validator(val env: Environment) {
 
         return KafkaStreams(builder.build(), streamConfig(appId, env))
     }
+
+
+
+    private fun joined(): Joined<String, InfoTrygdVedtak, SykePengeVedtak>? {
+        return Joined.with(Serdes.String(), infotrygdSerde(), sykepengeSerde())
+    }
+
+    private fun kombinertSerde(): SpecificAvroSerde<Vedtak> {
+        return configureAvroSerde(mapOf(
+                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl
+
+        ))
+    }
+
+    private fun sykepengeSerde(): SpecificAvroSerde<SykePengeVedtak> {
+        return configureAvroSerde(
+                mapOf(
+                        AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl
+
+                )
+        )
+    }
+
+    private fun infotrygdSerde(): SpecificAvroSerde<InfoTrygdVedtak> {
+        return configureAvroSerde(
+                mapOf(
+                        KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl
+
+                ))
+    }
+
+    private fun joinWindows() = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
 
     private fun vedtaksJoiner(): (InfoTrygdVedtak, SykePengeVedtak) -> Vedtak {
         return { fasit, forslag ->
