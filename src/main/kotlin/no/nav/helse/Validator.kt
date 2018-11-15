@@ -40,7 +40,7 @@ class Validator(val env: Environment) {
 
         builder.consumeTopic(Topics.VEDTAK_INFOTRYGD)
                 .peek { _, value -> log.info("received.IT: " + value) }
-                .join(sykePengeStream, vedtaksJoiner(), joinWindows(), joined())
+                .join(sykePengeStream, vedtaksJoiner(), fiveMin(), joinDeserializor())
                 .toTopic(Topics.VEDTAK_KOMBINERT)
 
         builder.consumeTopic(Topics.VEDTAK_KOMBINERT)
@@ -55,12 +55,12 @@ class Validator(val env: Environment) {
     }
 
 
-      private fun joined(): Joined<String, JSONObject, JSONObject> {
+      private fun joinDeserializor(): Joined<String, JSONObject, JSONObject> {
           return Joined.with(Serdes.String(), Topics.VEDTAK_INFOTRYGD.valueSerde, Topics.VEDTAK_SYKEPENGER.valueSerde)
       }
 
 
-    private fun joinWindows() = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
+    private fun fiveMin() = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
 
     private fun vedtaksJoiner(): (JSONObject, JSONObject) -> JSONObject {
         return { fasit, forslag ->
