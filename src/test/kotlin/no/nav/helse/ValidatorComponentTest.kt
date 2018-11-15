@@ -2,11 +2,10 @@ package no.nav.helse
 
 import no.nav.common.JAASCredential
 import no.nav.common.KafkaEnvironment
-import no.nav.helse.avro.InfoTrygdVedtak
-import no.nav.helse.avro.SykePengeVedtak
 import no.nav.helse.streams.Environment
 import no.nav.helse.streams.Topics
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.json.JSONObject
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
@@ -67,16 +66,25 @@ class ValidatorComponentTest {
         val validator = Validator(env)
         validator.start()
 
-        infotrygProducer.send(ProducerRecord<String, InfoTrygdVedtak>(Topics.VEDTAK_INFOTRYGD.name, "3", InfoTrygdVedtak("3", "123", "1.1.2018", "1.12.2018")))
-        sykepengeProducer.send(ProducerRecord<String, SykePengeVedtak>(Topics.VEDTAK_SYKEPENGER.name, "2", SykePengeVedtak("2", "123", "1.1.2018", "1.12.2018")))
-        sykepengeProducer.send(ProducerRecord<String, SykePengeVedtak>(Topics.VEDTAK_SYKEPENGER.name, "3", SykePengeVedtak("3", "123", "1.1.2018", "1.12.2018")))
-
+        infotrygProducer.send(ProducerRecord<String, JSONObject>(Topics.VEDTAK_INFOTRYGD.name, "3", infoTrygdVedtak()))
+        sykepengeProducer.send(ProducerRecord<String, JSONObject>(Topics.VEDTAK_SYKEPENGER.name, "2", sykepengeVedtak()))
+        sykepengeProducer.send(ProducerRecord<String, JSONObject>(Topics.VEDTAK_SYKEPENGER.name, "3", sykepengeVedtak()))
 
         resultConsumer.subscribe(listOf(Topics.VEDTAK_RESULTAT.name))
 
         val consumerRecords = resultConsumer.poll(Duration.ofSeconds(10))
         assertEquals(1, consumerRecords.count())
         validator.stop()
+    }
+
+    fun infoTrygdVedtak(): JSONObject {
+        val json = JSONObject()
+        return json.put("id", "3").put("belop", "123").put("fom", "1.1.2018").put("tom", "1.1.2018")
+    }
+
+    fun sykepengeVedtak(): JSONObject {
+        val json = JSONObject()
+        return json.put("id", "3").put("belop", "123").put("fom", "1.1.2018").put("tom", "1.1.2018")
     }
 
 

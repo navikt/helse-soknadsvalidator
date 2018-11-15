@@ -1,4 +1,3 @@
-
 val kotlin_version: String by extra
 
 val junitJupiterVersion = "5.3.1"
@@ -9,16 +8,13 @@ val ktorVersion = "1.0.0-beta-3"
 val prometheusVersion = "0.5.0"
 val kafkaVersion = "2.0.0"
 val confluentVersion = "5.0.0"
-val avroVersion = "1.8.2"
 val orgJsonVersion = "20180813"
-
 
 
 val mainClass = "no.nav.helse.AppKt"
 
 plugins {
     application
-    id("com.commercehub.gradle.plugin.avro") version "0.9.1"
     kotlin("jvm") version "1.3.0"
     id("com.github.johnrengelman.shadow") version "2.0.0"
 
@@ -26,7 +22,8 @@ plugins {
 
 buildscript {
     dependencies {
-        classpath("org.junit.platform:junit-platform-gradle-plugin:1.2.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.0")
+
     }
 }
 
@@ -39,7 +36,7 @@ dependencies {
     compile("com.ibm.mq:com.ibm.mq.allclient:9.1.0.0")
     compile("org.slf4j:slf4j-simple:$slf4jVersion")
     compile("io.ktor:ktor-server-netty:$ktorVersion")
-    compile("org.apache.avro:avro:$avroVersion")
+
 
     implementation("io.prometheus:simpleclient_common:$prometheusVersion")
     implementation("io.prometheus:simpleclient_hotspot:$prometheusVersion")
@@ -56,7 +53,7 @@ dependencies {
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     testCompile("org.amshove.kluent:kluent:$kluentVersion")
 
-    testImplementation ("no.nav:kafka-embedded-env:2.0.1")
+    testImplementation("no.nav:kafka-embedded-env:2.0.1")
 
     testCompile("org.jetbrains.spek:spek-api:$spekVersion") {
         exclude(group = "org.jetbrains.kotlin")
@@ -73,6 +70,8 @@ repositories {
     maven("https://dl.bintray.com/kotlin/ktor")
     maven("http://packages.confluent.io/maven/")
     maven("https://repo.adeo.no/repository/maven-central")
+    maven("https://kotlin.bintray.com/kotlinx")
+
     jcenter()
     mavenCentral()
 }
@@ -80,7 +79,9 @@ repositories {
 java {
     sourceCompatibility = JavaVersion.VERSION_1_10
     targetCompatibility = JavaVersion.VERSION_1_10
+
 }
+
 
 tasks.withType<Test> {
     useJUnitPlatform()

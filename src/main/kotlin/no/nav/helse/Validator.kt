@@ -1,18 +1,13 @@
 package no.nav.helse
 
-import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
-import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
-import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde
 import io.prometheus.client.Counter
-import no.nav.helse.avro.InfoTrygdVedtak
-import no.nav.helse.avro.SykePengeVedtak
-import no.nav.helse.avro.Vedtak
 import no.nav.helse.streams.*
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.JoinWindows
 import org.apache.kafka.streams.kstream.Joined
+import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
@@ -39,23 +34,19 @@ class Validator(val env: Environment) {
 
         val builder = StreamsBuilder()
 
-        val sykePengeStream = builder.consumeTopic(Topics.VEDTAK_SYKEPENGER.copy(
-                valueSerde = sykepengeSerde()))
+        val sykePengeStream = builder.consumeTopic(Topics.VEDTAK_SYKEPENGER)
                 .peek { _, value -> log.info("received.SP: " + value) }
 
 
-        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD.copy(
-                valueSerde = infotrygdSerde()))
+        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD)
                 .peek { _, value -> log.info("received.IT: " + value) }
                 .join(sykePengeStream, vedtaksJoiner(), joinWindows(), joined())
-                .toTopic(Topics.VEDTAK_KOMBINERT.copy(
-                        valueSerde = kombinertSerde()))
+                .toTopic(Topics.VEDTAK_KOMBINERT)
 
-        builder.consumeTopic(Topics.VEDTAK_KOMBINERT.copy(
-                valueSerde = kombinertSerde()))
+        builder.consumeTopic(Topics.VEDTAK_KOMBINERT)
                 .peek { _, value -> log.info("received.KOMBINERT: " + value) }
-                .filter { _, vedtak -> vedtak.getFasit().getBelop() == vedtak.getForslag().getBelop() }
-                .mapValues { value -> value.getFasit().getBelop() }
+                .filter { _, vedtak -> vedtak.getJSONObject("fasit").getString("belop") == vedtak.getJSONObject("forslag").getString("belop") }
+                .mapValues { value -> value.getJSONObject("fasit").getString("belop") }
                 .peek { _, _ -> korrektevedtakCounter.inc() }
                 .toTopic(Topics.VEDTAK_RESULTAT)
 
@@ -64,42 +55,21 @@ class Validator(val env: Environment) {
     }
 
 
+      private fun joined(): Joined<String, JSONObject, JSONObject> {
+          return Joined.with(Serdes.String(), Topics.VEDTAK_INFOTRYGD.valueSerde, Topics.VEDTAK_SYKEPENGER.valueSerde)
+      }
 
-    private fun joined(): Joined<String, InfoTrygdVedtak, SykePengeVedtak>? {
-        return Joined.with(Serdes.String(), infotrygdSerde(), sykepengeSerde())
-    }
-
-    private fun kombinertSerde(): SpecificAvroSerde<Vedtak> {
-        return configureAvroSerde(mapOf(
-                KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl
-
-        ))
-    }
-
-    private fun sykepengeSerde(): SpecificAvroSerde<SykePengeVedtak> {
-        return configureAvroSerde(
-                mapOf(
-                        AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl
-
-                )
-        )
-    }
-
-    private fun infotrygdSerde(): SpecificAvroSerde<InfoTrygdVedtak> {
-        return configureAvroSerde(
-                mapOf(
-                        KafkaAvroDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG to env.schemaRegistryUrl
-
-                ))
-    }
 
     private fun joinWindows() = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
 
-    private fun vedtaksJoiner(): (InfoTrygdVedtak, SykePengeVedtak) -> Vedtak {
+    private fun vedtaksJoiner(): (JSONObject, JSONObject) -> JSONObject {
         return { fasit, forslag ->
             log.info("joining messages: " + fasit + forslag)
             vedtakCounter.inc()
-            Vedtak.newBuilder().setFasit(fasit).setForslag(forslag).build()
+            val vedtak = JSONObject()
+            vedtak.put("fasit", fasit)
+            vedtak.put("forslag", forslag)
+            vedtak
         }
     }
 }
