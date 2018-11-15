@@ -69,7 +69,6 @@ dependencies {
 repositories {
     maven("https://dl.bintray.com/kotlin/ktor")
     maven("http://packages.confluent.io/maven/")
-    maven("https://repo.adeo.no/repository/maven-central")
     maven("https://kotlin.bintray.com/kotlinx")
 
     jcenter()
