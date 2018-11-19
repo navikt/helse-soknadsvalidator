@@ -5,6 +5,7 @@ import no.nav.helse.streams.*
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsBuilder
+import org.apache.kafka.streams.Topology
 import org.apache.kafka.streams.kstream.JoinWindows
 import org.apache.kafka.streams.kstream.Joined
 import org.json.JSONObject
@@ -12,25 +13,30 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 
-class Validator(val env: Environment) {
+class Validator() {
+
 
     private val appId = "sykepengevedtak-validator"
     private val log = LoggerFactory.getLogger("vedtakvalidator")
 
-    private val streamConsumer = StreamConsumer(appId, env, valider())
+    var streamConsumer: StreamConsumer ? = null
+
+    constructor(env: Environment) : this(){
+       streamConsumer = StreamConsumer(appId, env, KafkaStreams(setupTopology(), streamConfig(appId, env)))
+    }
 
     fun start() {
-        streamConsumer.start()
+        streamConsumer?.start()
     }
 
     fun stop() {
-        streamConsumer.stop()
+        streamConsumer?.stop()
     }
 
     private val korrektevedtakCounter = Counter.build().name("korrektevedtak").help("antall korrekte vedtak").register()
     private val vedtakCounter = Counter.build().name("vedtak").help("antall  vedtak").register()
 
-    private fun valider(): KafkaStreams {
+    private fun setupTopology(): Topology {
 
         val builder = StreamsBuilder()
 
@@ -51,18 +57,18 @@ class Validator(val env: Environment) {
                 .toTopic(Topics.VEDTAK_RESULTAT)
 
 
-        return KafkaStreams(builder.build(), streamConfig(appId, env))
+        return builder.build()
     }
 
 
-      private fun joinDeserializor(): Joined<String, JSONObject, JSONObject> {
-          return Joined.with(Serdes.String(), Topics.VEDTAK_INFOTRYGD.valueSerde, Topics.VEDTAK_SYKEPENGER.valueSerde)
-      }
+    private fun joinDeserializor(): Joined<String, JSONObject, JSONObject> {
+        return Joined.with(Serdes.String(), Topics.VEDTAK_INFOTRYGD.valueSerde, Topics.VEDTAK_SYKEPENGER.valueSerde)
+    }
 
 
     private fun fiveMin() = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
 
-    private fun vedtaksJoiner(): (JSONObject, JSONObject) -> JSONObject {
+    fun vedtaksJoiner(): (JSONObject, JSONObject) -> JSONObject {
         return { fasit, forslag ->
             log.info("joining messages: " + fasit + forslag)
             vedtakCounter.inc()

@@ -55,6 +55,8 @@ dependencies {
 
     testImplementation("no.nav:kafka-embedded-env:2.0.1")
 
+    testCompile("org.skyscreamer:jsonassert:1.2.3")
+
     testCompile("org.jetbrains.spek:spek-api:$spekVersion") {
         exclude(group = "org.jetbrains.kotlin")
     }
