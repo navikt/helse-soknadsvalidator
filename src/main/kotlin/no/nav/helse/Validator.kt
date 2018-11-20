@@ -19,10 +19,10 @@ class Validator() {
     private val appId = "sykepengevedtak-validator"
     private val log = LoggerFactory.getLogger("vedtakvalidator")
 
-    var streamConsumer: StreamConsumer ? = null
+    var streamConsumer: StreamConsumer? = null
 
-    constructor(env: Environment) : this(){
-       streamConsumer = StreamConsumer(appId, env, KafkaStreams(setupTopology(), streamConfig(appId, env)))
+    constructor(env: Environment) : this() {
+        streamConsumer = StreamConsumer(appId, env, KafkaStreams(setupTopology(), streamConfig(appId, env)))
     }
 
     fun start() {
@@ -43,10 +43,10 @@ class Validator() {
         val sykePengeStream = builder.consumeTopic(Topics.VEDTAK_SYKEPENGER)
                 .peek { _, value -> log.info("received.SP: " + value) }
 
-
         builder.consumeTopic(Topics.VEDTAK_INFOTRYGD)
                 .peek { _, value -> log.info("received.IT: " + value) }
                 .join(sykePengeStream, vedtaksJoiner(), fiveMin(), joinDeserializor())
+                .peek { _, _ -> vedtakCounter.inc() }
                 .toTopic(Topics.VEDTAK_KOMBINERT)
 
         builder.consumeTopic(Topics.VEDTAK_KOMBINERT)
@@ -56,10 +56,8 @@ class Validator() {
                 .peek { _, _ -> korrektevedtakCounter.inc() }
                 .toTopic(Topics.VEDTAK_RESULTAT)
 
-
         return builder.build()
     }
-
 
     private fun joinDeserializor(): Joined<String, JSONObject, JSONObject> {
         return Joined.with(Serdes.String(), Topics.VEDTAK_INFOTRYGD.valueSerde, Topics.VEDTAK_SYKEPENGER.valueSerde)
@@ -70,8 +68,6 @@ class Validator() {
 
     fun vedtaksJoiner(): (JSONObject, JSONObject) -> JSONObject {
         return { fasit, forslag ->
-            log.info("joining messages: " + fasit + forslag)
-            vedtakCounter.inc()
             val vedtak = JSONObject()
             vedtak.put("fasit", fasit)
             vedtak.put("forslag", forslag)

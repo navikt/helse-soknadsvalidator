@@ -33,7 +33,7 @@ application {
 
 dependencies {
     compile(kotlin("stdlib-jdk8"))
-    compile("com.ibm.mq:com.ibm.mq.allclient:9.1.0.0")
+    //compile("com.ibm.mq:com.ibm.mq.allclient:9.1.0.0")
     compile("org.slf4j:slf4j-simple:$slf4jVersion")
     compile("io.ktor:ktor-server-netty:$ktorVersion")
 
@@ -83,14 +83,12 @@ java {
 
 }
 
-
 tasks.withType<Test> {
     useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
     }
 }
-
 
 tasks.withType<Wrapper> {
     gradleVersion = "4.10.2"
