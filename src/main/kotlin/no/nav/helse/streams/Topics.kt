@@ -18,25 +18,25 @@ private val serdeConfig = mapOf(
 
 object Topics {
     val VEDTAK_INFOTRYGD = Topic(
-            name = "vedtak.infotrygd",
+            name = "privat-helse-infotrygd-vedtak",
             keySerde = Serdes.String(),
             valueSerde = Serdes.serdeFrom(JsonSerializer(), JsonDeserializer())
 
     )
 
     val VEDTAK_SYKEPENGER = Topic(
-            name = "vedtak.sykepenger",
+            name = "aapen-helse-sykepenger-vedtak",
             keySerde = Serdes.String(),
             valueSerde = Serdes.serdeFrom(JsonSerializer(), JsonDeserializer())
     )
     val VEDTAK_KOMBINERT = Topic(
-            name = "vedtak.kombinert",
+            name = "privat-helse-vedtak-kombinert",
             keySerde = Serdes.String(),
             valueSerde = Serdes.serdeFrom(JsonSerializer(), JsonDeserializer())
     )
 
     val VEDTAK_RESULTAT = Topic(
-            name = "vedtak.resultat",
+            name = "privat-helse-vedtak-resultat",
             keySerde = Serdes.String(),
             valueSerde = Serdes.String()
     )
