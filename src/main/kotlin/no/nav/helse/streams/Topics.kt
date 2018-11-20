@@ -42,11 +42,11 @@ object Topics {
     )
 }
 
-private fun serdeConfig(env: Environment) = mapOf(
-        AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG to
-                env.schemaRegistryUrl
-
-)
+//private fun serdeConfig(env: Environment) = mapOf(
+//        AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG to
+//                env.schemaRegistryUrl
+//
+//)
 
 fun configureGenericAvroSerde(serdeConfig: Map<String, Any>): GenericAvroSerde {
     return GenericAvroSerde().apply { configure(serdeConfig, false) }

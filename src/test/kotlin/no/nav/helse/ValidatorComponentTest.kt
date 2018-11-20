@@ -29,8 +29,8 @@ class ValidatorComponentTest {
         val env = Environment(
                 username = username,
                 password = password,
-                bootstrapServersUrl = embeddedEnvironment.brokersURL,
-                schemaRegistryUrl = embeddedEnvironment.schemaRegistry!!.url
+                bootstrapServersUrl = embeddedEnvironment.brokersURL
+                //schemaRegistryUrl = embeddedEnvironment.schemaRegistry!!.url
         )
 
 
