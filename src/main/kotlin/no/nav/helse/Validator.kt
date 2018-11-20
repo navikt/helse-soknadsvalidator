@@ -17,7 +17,7 @@ class Validator() {
 
 
     private val appId = "sykepengevedtak-validator"
-    private val log = LoggerFactory.getLogger("vedtakvalidator")
+    private val log = LoggerFactory.getLogger("sykepengevalidator")
 
     var streamConsumer: StreamConsumer? = null
 
