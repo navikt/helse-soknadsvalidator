@@ -1,4 +1,4 @@
-rootProject.name = "sykepengesoknadvalidator"
+rootProject.name = "spleis"
 pluginManagement {
     repositories {
         gradlePluginPortal()
