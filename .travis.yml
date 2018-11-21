@@ -4,18 +4,40 @@ services:
 - docker
 before_install:
 - openssl aes-256-cbc -K $encrypted_23505c5ca59d_key -iv $encrypted_23505c5ca59d_iv
-  -in travis/private.key.enc -out travis/helse.key -d
+  -in travis/helseci.key.enc -out travis/helse.key -d
 - git clone https://github.com/navikt/github-apps-support.git
 - export PATH=`pwd`/github-apps-support/bin:$PATH
-- export INSTALLATION_TOKEN=$(generate-installation-token.sh `generate-jwt.sh ./travis/helse.key
+- export GH_TOKEN=$(generate-installation-token.sh `generate-jwt.sh ./travis/helse.key
   $GITHUB_APP_ID`)
+- export COMMIT_SHORT=$(git rev-parse --short HEAD)
+- export ORIGINAL_COMMITTER=$(git log -1 --pretty=format:'%an <%ae>')
+- echo -e "machine github.com\n  login $GH_TOKEN" > ~/.netrc
 script:
-- make bump-version
-- make
-- echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-- git config user.name team-helse[bot]
-- git config user.email team-helse[bot]@users.noreply.github.com
-- "./travis/push-tag.sh"
+- "./gradlew check"
+- "./gradlew installDist"
+- docker build --pull -t $DOCKER_IMG_NAME:$COMMIT_SHORT .
+- |
+  if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "${TRAVIS_BRANCH}" = "master" ]; then
+    echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    docker push $DOCKER_IMG_NAME:$COMMIT_SHORT
+
+    git clone https://github.com/navikt/helse-iac.git
+
+    cd helse-iac
+    ./set-image.sh preprod/$APP_NAME/naiserator.yaml $DOCKER_IMG_NAME:$COMMIT_SHORT
+    ./set-image.sh prod/$APP_NAME/naiserator.yaml $DOCKER_IMG_NAME:$COMMIT_SHORT
+
+    git config user.name team-helse[bot]
+    git config user.email team-helse[bot]@users.noreply.github.com
+
+    git add preprod/$APP_NAME/naiserator.yaml
+    git add prod/$APP_NAME/naiserator.yaml
+    git commit -m "Bump $APP_NAME" -m "Caused by $TRAVIS_BUILD_WEB_URL" --author "$ORIGINAL_COMMITTER"
+
+    git push https://x-access-token:$GH_TOKEN@github.com/navikt/helse-iac.git master
+
+    cd ..
+    fi
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
@@ -25,6 +47,8 @@ cache:
   - "$HOME/.gradle/wrapper/"
 env:
   global:
-  - secure: F/8wx+UrwWUY3N0uFkicE0kwrKvH+L6NrygiTgDVhwA8weBd4MtXRADJyWex/YnoJAhcfVYjhjo2UmJgkL9yP8qi74cK+rbQDhut3QPZs/10XWFbOIeDS8ETV8tYInoN+m//lwdDeJMY1PxrUDP9T+OYEG7yGUMjcf08aVyCrsO7eZavoVYwRKuExOG2j8MfcZH246WLt5r9Zer6q4nR1dM8N6i75tuswreqUfGFHd4rYPsMKa8CmCuK4zDMD7KfOC859Q61h6cMSAnB31/027h31o8BHT4+wokAGVXNBM41Z/gANsQgk1qBE1JJv8feO4wgLUNcPYUY6FckBgP4ypn6EVETp+1JY9gJJ/htDjYPgomXTZj296DPOCqLRWIncMmflJyd5PEqc5DlYYeAYU9Ab/QrHkTaMESUlg5LGuUPB5iGEWXw6ZnBiCP9h45u5vdwxWKmm/FqiBGgwNrsOKwZvTldWPJPXgzFxQe+lhJV066PNOi3sXhPrBZlczhK9jTShZ0Rp/IMJ2r+XmpSYULaGMCaq4qSaormN1XHMo2b4TcPmjJ8VQGLDMbJz3NmNka8R9XphhBQhyqOiIG/8drSY31WeULbh+G+0X64gAoo7C7FMuXzsa63eTfTo80csiCQolwmM4yqxHgDzMyyxeq1wlu3g8whkPbYApGvgPM=
+  - APP_NAME=sykepengevalidator
+  - DOCKER_IMG_NAME=navikt/sykepengevalidator
+  - GITHUB_APP_ID=19726
   - secure: w8Vs0PDjnYwZyahOXeZeU+3Lpv9u/Q09xmRC+9SM13cp1d1youhRBTghjlABl78gumdWAfXdrtQjEODhlWHo+/8ajLns7Pq5g9dhxWSaP4j/N2LC80f/qoYhpZ/jNJzl8eeLA7SeybovXRSzz/9nZLfOHikdi/A3016KRqcbVNSutsCaGZPXrhFGOBT5Ne8nLApWRPAW6QoeUhaDbL3gwV6xyWqZ0WrYb/araV36gq4jnVt+40I8rFCOUX0TkcVc1UVXpYPQkZBMhUlJfmqvr6gi4dGTfg9rl+PzgvE/aP2Wo/KhOVxB6wZtaKyfEynHLu1zYuAmoqopmWDYc+HsLQ/H1EqSFpn4GidIMlQohigECD6mTeWlG/WpNCG5whO2tKPi6NpFZyv19JmURmeN7ZcHnltp2G/P5xhPBOuvNMi3ullpEbv9fqM80rgzjiZwoj6xxX3b72VkcMTYq9c8UkeOSi8B2YMohaSoK/Bd7V7NS+DqzDlDVh9romIG1vlqlWRnCHTnmtEN+MnzleY3JgkN9qTmGuw/Uv6PFwdLAR4kFAg6d3GVZ03bNIVIg2Feb0U+hP1gSsfQA0epxEcpqug2vaX0j9mMNizbsxBgs79dNRPqG8jh5tdXTIUDjPl043OIUjJ3OYWck2A4xoWqwV3ka+9rmAQhJt1tvlrgr6A=
   - secure: KVRKPoncU0S1dG/8dylLJWsH5UDwxS2/HnsMagOq67aEKo1QM4LPe7uRntFDiKOVMJdosKgkbodFCuLbsXyQqGwb3wpzAfUOJG89DqlOMDbG5zHsPXjohrhnEPkBXp1kZGLKviD+EoYh4S2fustVjx5MZuMG0EeAA87hDKcyofxozCiHXp2dgRZRsEpQ6hnuGD1qNLanaxwWCwMbJiMt+88QgviOaYuMT+V8tuUoPMpvVlrLqFUCOxV+tHXQZhdbcliO/9RV5N+X0bFQ0AoIW6HhlXhQuh6hL+zyardEVyYOc4SUH2bRltISJ1Yd0A7JXhhXU5Y5/Uf+vkmyJLTfTxLPJhadgwfeWXr/AZNaWNvakodkGp24cnKzTlr9CC8NJHwruNIl5Fw3P9MP1AKmIsq0ne2oyK1u+J406kXw25ZrW2cRqwLQZ2zsO2HS1fnvOxAsvtrvPCcpKXcRhnic1Z/lvVBMg6iW14TF45OzTpnkMwb2+/emBBNtcyixeB0Khc4JBCOCMjFXAHwOfCdn80TbdXMdomrtLVHFOyzxQMuCyDooECB0HEPzM5339oGyYzqNdi+3c4uXJ10iwmKtbHgI9UgfUKzEZgkyMDKf6DS6ceuMr0fJliwnh0FrUghy3lEhbqxbtIiczVH7IfYXWdaUPunXOaWwXHQbLLjl2Os=
