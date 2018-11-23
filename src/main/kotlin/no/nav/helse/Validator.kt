@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit
 class Validator() {
 
 
-    private val appId = "sykepengevedtak-validator"
-    private val log = LoggerFactory.getLogger("sykepengevedtak-validator")
+    private val appId = "spleis"
+    private val log = LoggerFactory.getLogger("spleis")
 
     var streamConsumer: StreamConsumer? = null
 
