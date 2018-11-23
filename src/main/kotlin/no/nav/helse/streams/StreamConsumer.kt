@@ -1,20 +1,22 @@
 package no.nav.helse.streams
 
-import io.ktor.application.*
-import io.ktor.http.*
-import io.ktor.response.*
-import io.ktor.routing.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.prometheus.client.*
-import io.prometheus.client.exporter.common.*
-import io.prometheus.client.hotspot.*
-import org.apache.kafka.streams.*
-import org.slf4j.*
+import io.ktor.application.call
+import io.ktor.http.ContentType
+import io.ktor.response.respondText
+import io.ktor.response.respondTextWriter
+import io.ktor.routing.get
+import io.ktor.routing.routing
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.exporter.common.TextFormat
+import io.prometheus.client.hotspot.DefaultExports
+import org.apache.kafka.streams.KafkaStreams
+import org.slf4j.LoggerFactory
 
 class StreamConsumer(val consumerName: String,
-                     val env: Environment,
-                     val streams: KafkaStreams) {
+                     val streams: KafkaStreams,
+                     val httpPort: Int = 8080) {
 
    private val collectorRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
    private val log = LoggerFactory.getLogger(consumerName)
@@ -27,8 +29,13 @@ class StreamConsumer(val consumerName: String,
       addShutdownHook()
    }
 
+   fun stop(){
+      streams.close()
+   }
+
+
    private fun naisHttpChecks() {
-      embeddedServer(Netty, env.httpPort ?: 8080) {
+      embeddedServer(Netty, httpPort) {
          routing {
 
             get("/isAlive") {
@@ -60,7 +67,4 @@ class StreamConsumer(val consumerName: String,
       })
    }
 
-   fun stop() {
-      streams.close()
-   }
 }

@@ -1,7 +1,6 @@
 package no.nav.helse
 
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
-import no.nav.helse.streams.Environment
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer

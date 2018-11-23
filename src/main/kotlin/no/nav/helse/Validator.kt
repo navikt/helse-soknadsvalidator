@@ -22,16 +22,14 @@ class Validator() {
     var streamConsumer: StreamConsumer? = null
 
     constructor(env: Environment) : this() {
-        streamConsumer = StreamConsumer(appId, env, KafkaStreams(setupTopology(), streamConfig(appId, env)))
+        streamConsumer = StreamConsumer(appId, KafkaStreams(setupTopology(),
+                streamConfig(appId, env.bootstrapServersUrl, Pair(env.username, env.password), Pair(env.navTruststorePath, env.navTruststorePassword))))
     }
 
     fun start() {
         streamConsumer?.start()
     }
 
-    fun stop() {
-        streamConsumer?.stop()
-    }
 
     private val korrektevedtakCounter = Counter.build().name("korrektevedtak").help("antall korrekte vedtak").register()
     private val vedtakCounter = Counter.build().name("vedtak").help("antall  vedtak").register()

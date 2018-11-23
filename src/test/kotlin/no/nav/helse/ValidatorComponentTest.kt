@@ -2,7 +2,6 @@ package no.nav.helse
 
 import no.nav.common.JAASCredential
 import no.nav.common.KafkaEnvironment
-import no.nav.helse.streams.Environment
 import no.nav.helse.streams.Topics
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.json.JSONObject
@@ -62,7 +61,6 @@ class ValidatorComponentTest {
         val sykepengeProducer = sykePengeProducer(env)
         val resultConsumer = resultatConsumer(env)
 
-
         val validator = Validator(env)
         validator.start()
 
@@ -74,7 +72,7 @@ class ValidatorComponentTest {
 
         val consumerRecords = resultConsumer.poll(Duration.ofSeconds(10))
         assertEquals(1, consumerRecords.count())
-        validator.stop()
+        validator.streamConsumer?.stop()
     }
 
     fun infoTrygdVedtak(): JSONObject {
@@ -86,6 +84,4 @@ class ValidatorComponentTest {
         val json = JSONObject()
         return json.put("id", "3").put("belop", "123").put("fom", "1.1.2018").put("tom", "1.1.2018")
     }
-
-
 }

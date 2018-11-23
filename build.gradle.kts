@@ -33,7 +33,6 @@ application {
 
 dependencies {
     compile(kotlin("stdlib-jdk8"))
-    //compile("com.ibm.mq:com.ibm.mq.allclient:9.1.0.0")
     compile("org.slf4j:slf4j-simple:$slf4jVersion")
     compile("io.ktor:ktor-server-netty:$ktorVersion")
 
@@ -72,6 +71,7 @@ repositories {
     maven("https://dl.bintray.com/kotlin/ktor")
     maven("http://packages.confluent.io/maven/")
     maven("https://kotlin.bintray.com/kotlinx")
+    //maven("https://bintray.com/navikt/maven")
 
     jcenter()
     mavenCentral()
