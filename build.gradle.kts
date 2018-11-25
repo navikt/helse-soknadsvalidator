@@ -1,3 +1,6 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 val kotlin_version: String by extra
 
 val junitJupiterVersion = "5.3.1"
@@ -35,6 +38,7 @@ dependencies {
     compile(kotlin("stdlib-jdk8"))
     compile("org.slf4j:slf4j-simple:$slf4jVersion")
     compile("io.ktor:ktor-server-netty:$ktorVersion")
+    compile("no.nav.helse:streams:10")
 
 
     implementation("io.prometheus:simpleclient_common:$prometheusVersion")
@@ -45,8 +49,6 @@ dependencies {
     compile("io.confluent:kafka-streams-avro-serde:$confluentVersion")
 
     api("org.json:json:$orgJsonVersion")
-
-
 
     testCompile("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
@@ -78,9 +80,16 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_10
-    targetCompatibility = JavaVersion.VERSION_1_10
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 
+}
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = "1.8"
+}
+tasks.withType<ShadowJar> {
+    classifier = ""
 }
 
 tasks.withType<Test> {
