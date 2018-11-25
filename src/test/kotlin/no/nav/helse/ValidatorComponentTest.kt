@@ -1,13 +1,14 @@
 package no.nav.helse
 
+import io.prometheus.client.CollectorRegistry
 import no.nav.common.JAASCredential
 import no.nav.common.KafkaEnvironment
 import no.nav.helse.streams.Topics
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.json.JSONObject
-import org.junit.AfterClass
-import org.junit.BeforeClass
-import org.junit.Test
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
 import java.time.Duration
 import kotlin.test.assertEquals
 
@@ -33,15 +34,17 @@ class ValidatorComponentTest {
         )
 
 
-        @BeforeClass
+        @BeforeAll
         @JvmStatic
         fun setup() {
+            CollectorRegistry.defaultRegistry.clear()
             embeddedEnvironment.start()
         }
 
-        @AfterClass
+        @AfterAll
         @JvmStatic
         fun teardown() {
+            CollectorRegistry.defaultRegistry.clear()
             embeddedEnvironment.tearDown()
         }
     }
