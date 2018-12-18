@@ -33,17 +33,20 @@ class ValidatorComponentTest {
                 //schemaRegistryUrl = embeddedEnvironment.schemaRegistry!!.url
         )
 
+        val validator = Validator(env)
 
         @BeforeAll
         @JvmStatic
         fun setup() {
             CollectorRegistry.defaultRegistry.clear()
             embeddedEnvironment.start()
+            validator.start()
         }
 
         @AfterAll
         @JvmStatic
         fun teardown() {
+            validator.streamConsumer?.stop()
             CollectorRegistry.defaultRegistry.clear()
             embeddedEnvironment.tearDown()
         }
@@ -64,9 +67,6 @@ class ValidatorComponentTest {
         val sykepengeProducer = sykePengeProducer(env)
         val resultConsumer = resultatConsumer(env)
 
-        val validator = Validator(env)
-        validator.start()
-
         infotrygProducer.send(ProducerRecord<String, JSONObject>(Topics.VEDTAK_INFOTRYGD.name, "3", infoTrygdVedtak()))
         sykepengeProducer.send(ProducerRecord<String, JSONObject>(Topics.VEDTAK_SYKEPENGER.name, "2", sykepengeVedtak()))
         sykepengeProducer.send(ProducerRecord<String, JSONObject>(Topics.VEDTAK_SYKEPENGER.name, "3", sykepengeVedtak()))
@@ -75,7 +75,6 @@ class ValidatorComponentTest {
 
         val consumerRecords = resultConsumer.poll(Duration.ofSeconds(10))
         assertEquals(1, consumerRecords.count())
-        validator.streamConsumer?.stop()
     }
 
     fun infoTrygdVedtak(): JSONObject {
