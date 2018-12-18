@@ -7,10 +7,10 @@ import no.nav.helse.streams.Topics
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.json.JSONObject
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.time.Duration
-import kotlin.test.assertEquals
 
 class ValidatorComponentTest {
 
@@ -56,7 +56,6 @@ class ValidatorComponentTest {
     @Test
     fun ` embedded kafka cluster is up and running `() {
         assertEquals(embeddedEnvironment.serverPark.status, KafkaEnvironment.ServerParkStatus.Started)
-
     }
 
 
