@@ -1,4 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val junitJupiterVersion = "5.3.1"
@@ -8,19 +7,13 @@ val kluentVersion = "1.41"
 val mainClass = "no.nav.helse.AppKt"
 
 plugins {
-    application
     kotlin("jvm") version "1.3.11"
-    id("com.github.johnrengelman.shadow") version "4.0.3"
 }
 
 buildscript {
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.0")
     }
-}
-
-application {
-    mainClassName = "$mainClass"
 }
 
 dependencies {
@@ -55,14 +48,31 @@ repositories {
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
-
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
-tasks.withType<ShadowJar> {
-    classifier = ""
+
+tasks.named<KotlinCompile>("compileTestKotlin") {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+tasks.named<Jar>("jar") {
+    baseName = "app"
+
+    manifest {
+        attributes["Main-Class"] = mainClass
+        attributes["Class-Path"] = configurations["compile"].map {
+            it.name
+        }.joinToString(separator = " ")
+    }
+
+    configurations["compile"].forEach {
+        val file = File("$buildDir/libs/${it.name}")
+        if (!file.exists())
+            it.copyTo(file)
+    }
 }
 
 tasks.withType<Test> {

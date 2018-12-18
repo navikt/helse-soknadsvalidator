@@ -1,3 +1,3 @@
-FROM navikt/java:10
+FROM navikt/java:11
 
-COPY build/libs/spleis.jar app.jar
+COPY build/libs/*.jar ./
