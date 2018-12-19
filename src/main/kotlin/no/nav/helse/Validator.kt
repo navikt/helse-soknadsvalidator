@@ -12,27 +12,24 @@ import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
-
-class Validator() {
-
+class Validator(env: Environment) {
 
     private val appId = "spleis"
     private val log = LoggerFactory.getLogger("spleis")
 
-    var streamConsumer: StreamConsumer? = null
+    var streamConsumer: StreamConsumer
 
-    constructor(env: Environment) : this() {
+    init {
         streamConsumer = StreamConsumer(appId, KafkaStreams(setupTopology(),
                 streamConfig(appId, env.bootstrapServersUrl, Pair(env.username, env.password), Pair(env.navTruststorePath, env.navTruststorePassword))))
     }
 
     fun start() {
-        streamConsumer?.start()
+        streamConsumer.start()
     }
 
-
     private val korrektevedtakCounter = Counter.build().name("korrektevedtak").help("antall korrekte vedtak").register()
-    private val vedtakCounter = Counter.build().name("vedtak").help("antall  vedtak").register()
+    private val vedtakCounter = Counter.build().name("vedtak").help("antall vedtak").register()
 
     private fun setupTopology(): Topology {
 
@@ -60,7 +57,6 @@ class Validator() {
     private fun joinDeserializor(): Joined<String, JSONObject, JSONObject> {
         return Joined.with(Serdes.String(), Topics.VEDTAK_INFOTRYGD.valueSerde, Topics.VEDTAK_SYKEPENGER.valueSerde)
     }
-
 
     private fun fiveMin() = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
 

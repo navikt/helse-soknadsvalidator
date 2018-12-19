@@ -27,7 +27,7 @@ object ValidatorFeature: Spek({
                     .put("tom", "1.1.2018")
 
             on("joining") {
-                var result = Validator().vedtaksJoiner()(infotrygdVedtak, sykepengeVedtak)
+                var result = Validator(Environment()).vedtaksJoiner()(infotrygdVedtak, sykepengeVedtak)
 
                 it("returns a JSON object containing both objects") {
                     shouldEqualJSON(result.getJSONObject("fasit"), infotrygdVedtak)
