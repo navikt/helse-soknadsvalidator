@@ -83,5 +83,5 @@ fun JSONObject.getLocalDate(key: String): LocalDate {
 }
 
 fun JSONObject.hasKeys(keys: List<String>): Boolean {
-    return keys.any(this::has)
+    return keys.all(this::has)
 }
