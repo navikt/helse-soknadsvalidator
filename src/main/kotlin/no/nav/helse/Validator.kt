@@ -6,16 +6,18 @@ import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.Topology
-import org.apache.kafka.streams.kstream.JoinWindows
-import org.apache.kafka.streams.kstream.Joined
+import org.apache.kafka.streams.kstream.*
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class Validator(env: Environment) {
 
     private val appId = "spleis"
     private val log = LoggerFactory.getLogger("spleis")
+    private val sykepengeKlient = SykepengeKlient(env)
 
     var streamConsumer: StreamConsumer
 
@@ -29,36 +31,32 @@ class Validator(env: Environment) {
     }
 
     private val korrektevedtakCounter = Counter.build().name("korrektevedtak").help("antall korrekte vedtak").register()
-    private val vedtakCounter = Counter.build().name("vedtak").help("antall vedtak").register()
+    private val vedtakUtenInfotrygdCounter = Counter.build().name("for_tidlige_vedtak").help("antall vedtak fattet av vår løsning som ikke er fattet i infotrygd").register()
+    private val vedtakMedInfotrygdCounter = Counter.build().name("matchede_vedtak").help("antall vedtak fattet av vår løsning der vi også har vedtak i infotrygd").register()
+    private val vedtakCounter = Counter.build().name("vedtak").help("antall vedtak fattet av vår løsning").register()
 
     private fun setupTopology(): Topology {
 
         val builder = StreamsBuilder()
 
-        val sykePengeStream = builder.consumeTopic(Topics.VEDTAK_SYKEPENGER)
+        val base: KStream<String, Pair<JSONObject, InfoTrygdVedtak?>> =builder.consumeTopic(Topics.VEDTAK_SYKEPENGER)
                 .peek { _, value -> log.info("received.SP: " + value) }
-
-        builder.consumeTopic(Topics.VEDTAK_INFOTRYGD)
-                .peek { _, value -> log.info("received.IT: " + value) }
-                .join(sykePengeStream, vedtaksJoiner(), fiveMin(), joinDeserializor())
                 .peek { _, _ -> vedtakCounter.inc() }
-                .toTopic(Topics.VEDTAK_KOMBINERT)
+                .mapValues { _, value -> VedtakToVedtakPairMapper(sykepengeKlient).apply(value) }
 
-        builder.consumeTopic(Topics.VEDTAK_KOMBINERT)
-                .peek { _, value -> log.info("received.KOMBINERT: " + value) }
-                .filter { _, vedtak -> vedtak.getJSONObject("fasit").getString("belop") == vedtak.getJSONObject("forslag").getString("belop") }
-                .mapValues { value -> value.getJSONObject("fasit").getString("belop") }
-                .peek { _, _ -> korrektevedtakCounter.inc() }
-                .toTopic(Topics.VEDTAK_RESULTAT)
+        val branches = base.branch(
+                Predicate<String, Pair<JSONObject, InfoTrygdVedtak?>> { _, (_, infoTrygdVedtak) -> infoTrygdVedtak == null },
+                Predicate<String, Pair<JSONObject, InfoTrygdVedtak?>> { _, (_, infoTrygdVedtak) -> infoTrygdVedtak != null }
+        )
+
+        // there was no infotrygd-thing
+        branches[0].peek { _, _ -> vedtakUtenInfotrygdCounter.inc() }
+
+        // there was an infotrygd-thing
+        branches[1].peek { _, _ -> vedtakMedInfotrygdCounter.inc() }
 
         return builder.build()
     }
-
-    private fun joinDeserializor(): Joined<String, JSONObject, JSONObject> {
-        return Joined.with(Serdes.String(), Topics.VEDTAK_INFOTRYGD.valueSerde, Topics.VEDTAK_SYKEPENGER.valueSerde)
-    }
-
-    private fun fiveMin() = JoinWindows.of(TimeUnit.MINUTES.toMillis(5))
 
     fun vedtaksJoiner(): (JSONObject, JSONObject) -> JSONObject {
         return { fasit, forslag ->
@@ -68,4 +66,22 @@ class Validator(env: Environment) {
             vedtak
         }
     }
+}
+
+class VedtakToVedtakPairMapper(val sykepengeKlient: SykepengeKlient) : ValueMapper<JSONObject, Pair<JSONObject, InfoTrygdVedtak?>> {
+    override fun apply(value: JSONObject): Pair<JSONObject, InfoTrygdVedtak?> {
+        return when (value.hasKeys(listOf("fom", "tom", "aktørId"))) {
+            true -> Pair(value, sykepengeKlient.finnGjeldendeSykepengeVedtak(value.getString("aktørId"), value.getLocalDate("fom"), value.getLocalDate("tom")))
+            false -> Pair(value, null)
+        }
+    }
+}
+
+fun JSONObject.getLocalDate(key: String): LocalDate {
+    val rawValue: String = getString(key)
+    return LocalDate.parse(rawValue, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+}
+
+fun JSONObject.hasKeys(keys: List<String>): Boolean {
+    return keys.any(this::has)
 }
