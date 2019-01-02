@@ -1,9 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val junitJupiterVersion = "5.3.1"
+val assertJVersion = "3.11.1"
 val spekVersion = "1.2.1"
 val kluentVersion = "1.41"
 val fuelVersion = "1.15.1"
+val orgJsonVersion = "20180813"
 
 val mainClass = "no.nav.helse.AppKt"
 
@@ -21,10 +23,12 @@ dependencies {
     compile(kotlin("stdlib-jdk8"))
     compile("no.nav.helse:streams:16")
     compile("com.github.kittinunf.fuel:fuel:$fuelVersion")
+    compile("org.json:json:$orgJsonVersion")
 
     testCompile("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testRuntime("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     testCompile("org.amshove.kluent:kluent:$kluentVersion")
+    testCompile("org.assertj:assertj-core:$assertJVersion")
 
     testImplementation("no.nav:kafka-embedded-env:2.0.1")
 
